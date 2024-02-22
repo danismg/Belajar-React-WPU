@@ -2,39 +2,14 @@ import { useEffect, useRef, useState } from "react";
 import Button from "../Elements/Button";
 import CardProduct from "../Fragments/CardProduct";
 import Counter from "../Fragments/Counter";
-
-const products = [
-  {
-    id: 1,
-    name: "Sepatu Baru",
-    price: 1000000,
-    image: "/images/shoes.jpg",
-    description:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Ullam facilis cupiditate blanditiis amet doloribus, commodi ",
-  },
-  {
-    id: 2,
-    name: "Sepatu Baru 2",
-    price: 3000000,
-    image: "/images/shoes.jpg",
-    description:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Ullam facilis cupiditate ",
-  },
-  {
-    id: 3,
-    name: "Sepatu Baru 3",
-    price: 50000,
-    image: "/images/shoes.jpg",
-    description:
-      "Lorem ipsum dolor sit amet consectetur adipisicing elit. Ullam facilis cupiditate loradkfa asdfhasd faoisd fahs dofahkfds hioisjdo ",
-  },
-];
-
-const email = localStorage.getItem("email");
+import { getProducts } from "../../services/product.service";
+import { getUsername } from "../../services/auth.service";
 
 const ProductPage = () => {
   const [cart, setCart] = useState([]);
   const [totalPrice, setTotalPrice] = useState(0);
+  const [products, setProducts] = useState([]);
+  const [username, setUsername] = useState("");
 
   useEffect(
     () => {
@@ -45,7 +20,22 @@ const ProductPage = () => {
   );
 
   useEffect(() => {
-    if (cart.length > 0) {
+    const token = localStorage.getItem("token");
+    if (token) {
+      setUsername(getUsername(token));
+    } else {
+      window.location.href = "/login";
+    }
+  }, []);
+
+  useEffect(() => {
+    getProducts((data) => {
+      setProducts(data);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (products.length > 0 && cart.length > 0) {
       const sum = cart.reduce((acc, item) => {
         const product = products.find((product) => product.id === item.id);
         return acc + product.price * item.qty;
@@ -53,7 +43,7 @@ const ProductPage = () => {
       setTotalPrice(sum);
       localStorage.setItem("cart", JSON.stringify(cart));
     }
-  }, [cart]);
+  }, [cart, products]);
 
   const handleAddToCart = (id) => {
     if (cart.find((item) => item.id === id)) {
@@ -68,7 +58,7 @@ const ProductPage = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("email");
+    localStorage.removeItem("token");
     localStorage.removeItem("password");
     window.location.href = "/login";
   };
@@ -93,7 +83,7 @@ const ProductPage = () => {
   return (
     <>
       <div className="flex justify-end h-20 bg-blue-600 text-white items-center px-5">
-        {email}
+        {username}
         <Button classname="ml-5 bg-black" onClick={handleLogout}>
           Logout
         </Button>
@@ -104,18 +94,20 @@ const ProductPage = () => {
         </h1>
         <div className="flex justify-center py-5 ">
           <div className="w-4/6 flex flex-wrap">
-            {products.map((product) => (
-              <CardProduct key={product.id}>
-                <CardProduct.Header image={product.image}></CardProduct.Header>
-                <CardProduct.Body
-                  name={product.name}
-                  children={product.description}></CardProduct.Body>
-                <CardProduct.Footer
-                  id={product.id}
-                  price={product.price}
-                  handleAddToCart={handleAddToCart}></CardProduct.Footer>
-              </CardProduct>
-            ))}
+            {products.length > 0 &&
+              products.map((product) => (
+                <CardProduct key={product.id}>
+                  <CardProduct.Header
+                    image={product.image}></CardProduct.Header>
+                  <CardProduct.Body
+                    name={product.title}
+                    children={product.description}></CardProduct.Body>
+                  <CardProduct.Footer
+                    id={product.id}
+                    price={product.price}
+                    handleAddToCart={handleAddToCart}></CardProduct.Footer>
+                </CardProduct>
+              ))}
           </div>
 
           <div className="w-2/6">
@@ -130,31 +122,32 @@ const ProductPage = () => {
                 </tr>
               </thead>
               <tbody>
-                {cart.map((item) => {
-                  const product = products.find(
-                    (product) => product.id === item.id
-                  );
-                  return (
-                    <tr key={item.id}>
-                      <td>{product.name}</td>
-                      <td>
-                        {"Rp " +
-                          product.price.toLocaleString("id-ID", {
-                            styles: "currency",
-                            currency: "IDR",
-                          })}
-                      </td>
-                      <td>{item.qty}</td>
-                      <td>
-                        {"Rp " +
-                          (item.qty * product.price).toLocaleString("id-ID", {
-                            styles: "currency",
-                            currency: "IDR",
-                          })}
-                      </td>
-                    </tr>
-                  );
-                })}
+                {products.length > 0 &&
+                  cart.map((item) => {
+                    const product = products.find(
+                      (product) => product.id === item.id
+                    );
+                    return (
+                      <tr key={item.id}>
+                        <td>{product.title}</td>
+                        <td>
+                          {"$ " +
+                            product.price.toLocaleString("id-ID", {
+                              styles: "currency",
+                              currency: "USD",
+                            })}
+                        </td>
+                        <td>{item.qty}</td>
+                        <td>
+                          {"$ " +
+                            (item.qty * product.price).toLocaleString("id-ID", {
+                              styles: "currency",
+                              currency: "USD",
+                            })}
+                        </td>
+                      </tr>
+                    );
+                  })}
 
                 <tr ref={totalPriceRef}>
                   <td colSpan={3}>
@@ -165,10 +158,10 @@ const ProductPage = () => {
                   <td>
                     <b>
                       <strong>
-                        {"Rp " +
+                        {"$ " +
                           totalPrice.toLocaleString("id-ID", {
                             styles: "currency",
-                            currency: "IDR",
+                            currency: "USD",
                           })}
                       </strong>
                     </b>
