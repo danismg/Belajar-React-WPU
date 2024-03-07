@@ -4,13 +4,13 @@ import CardProduct from "../Fragments/CardProduct";
 import Counter from "../Fragments/Counter";
 import { getProducts } from "../../services/product.service";
 import { getUsername } from "../../services/auth.service";
+import { useLogin } from "../../hooks/useLogin";
 
 const ProductPage = () => {
   const [cart, setCart] = useState([]);
   const [totalPrice, setTotalPrice] = useState(0);
   const [products, setProducts] = useState([]);
-  const [username, setUsername] = useState("");
-
+  const username = useLogin();
   useEffect(
     () => {
       // ambil data dari local storage
@@ -18,15 +18,6 @@ const ProductPage = () => {
     },
     [] // array tersebut berfungsi untuk update data ketika ada perubahan pada data yang diawasi
   );
-
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      setUsername(getUsername(token));
-    } else {
-      window.location.href = "/login";
-    }
-  }, []);
 
   useEffect(() => {
     getProducts((data) => {
@@ -98,7 +89,8 @@ const ProductPage = () => {
               products.map((product) => (
                 <CardProduct key={product.id}>
                   <CardProduct.Header
-                    image={product.image}></CardProduct.Header>
+                    image={product.image}
+                    id={product.id}></CardProduct.Header>
                   <CardProduct.Body
                     name={product.title}
                     children={product.description}></CardProduct.Body>
